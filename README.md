@@ -13,13 +13,14 @@ This CSV file should contain a header line followed by 4 fields, seperated by co
 * Products separated by spaces,
 * Products separated by spaces,
 * The full title of the rate law,
-* Modifiers separated by spaces
+* Modifiers separated by spaces,
+* Parameters separated by spaces
 
 `[A]+[B] -> [AB]`
 
-Substrate | Products | Kinetic Law | Modifiers
--|-|-|-
-A B|AB|Mass Action|
+Substrate | Products | Kinetic Law | Modifiers | Parameters
+-|-|-|-|-
+A B|AB|Mass Action||ABBinding
 
 ### Rate Laws
 
@@ -39,7 +40,7 @@ This CSV file contains parameter names and their values:
 
 Parameter|Value
 -|-
-k_on|0.2
+ABBinding|0.2
 
 
 
