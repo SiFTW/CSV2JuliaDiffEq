@@ -1,7 +1,9 @@
 # CSV2JuliaDiffEq
 Convert reactions and parameters defined in CSV files to DifferentialEquations.jl equations
 
+## Example usage
 
+python csv2model.py examples/reactions2.csv examples/parameters2.csv examples/rateLaws2.csv odeFile.jl
 
 ## Input file formats
 
