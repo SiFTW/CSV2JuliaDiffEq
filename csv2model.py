@@ -3,8 +3,8 @@ import sys
 import csv
 import re
 
-def csv2model(reactionfile,parameterfile,ratelawfile):
-
+def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
+    ODEDict=dict()
     print('Opening {file} as rate law file'.format(file=ratelawfile))
     ratelaws=dict()
     #let's populate a string array of rate laws
@@ -43,13 +43,18 @@ def csv2model(reactionfile,parameterfile,ratelawfile):
 
             #split up substrates, products, modifiers and parameters by space
             substratesInThisRxn=substrates.split(' ')
+            substratesInThisRxn=list(filter(None,substratesInThisRxn))
             productsInThisRxn=products.split(' ')
+            productsInThisRxn=list(filter(None,productsInThisRxn))
             modifiersInThisRxn=modifiers.split(' ')
+            modifiersInThisRxn=list(filter(None,modifiersInThisRxn))            
             parametersInThisRxn=parameters.split(' ')
+            parametersInThisRxn=list(filter(None,parametersInThisRxn))
             #print(substratesInThisRxn)
 
             #print(ratelaws.keys())
             #lookup kinetic law
+        
             thisLaw=ratelaws[kineticlaw]
             
             #now we need to go through products substrates modifiers and variable using regular expressions
@@ -113,9 +118,36 @@ def csv2model(reactionfile,parameterfile,ratelawfile):
                             newLaw+=splitLaw[i]
                                                    
                     
-            thisLaw="".join(newLaw)
-            print(thisLaw)
 
+                            thisLaw="".join(newLaw)
 
+            #we need to add this reaction to every product and substrate involved in this reaction
+            for i in range(len(substratesInThisRxn)):
+                thisSubstrate=substratesInThisRxn[i]
+                if thisSubstrate in ODEDict.keys():
+                    ODEDict[thisSubstrate]=ODEDict[thisSubstrate]+' - '+thisLaw
+                else:
+                    ODEDict[thisSubstrate]='du['+str(len(ODEDict))+']= -'+thisLaw
+            for i in range(len(productsInThisRxn)):
+                thisProduct=productsInThisRxn[i]
+                if thisProduct in ODEDict.keys():
+                    ODEDict[thisProduct]=ODEDict[thisProduct]+' + '+thisLaw
+                else:
+                    ODEDict[thisProduct]='du['+str(len(ODEDict))+']= + '+thisLaw
+
+    #print(ODEDict)
+    writeODEFile(ODEDict,outputFile)
+
+def writeODEFile(ODEDict,outputFile):
+    #this function will write the ODE file ready to be called by Julia
+    with open(outputFile,'w') as f:
+        f.write('function odeFile(t,y,du)\n')
+        for index,line in enumerate(ODEDict.keys()):
+            f.write('\t'+line+'=y['+str(index)+']\n')
+        for index, line in enumerate(ODEDict.values()):
+            f.write('\t#'+ODEDict.keys()[index]+'\n')            
+            f.write('\t'+line+'\n')
+        f.write('end')
     
-csv2model(sys.argv[1],sys.argv[2],sys.argv[3])
+
+csv2model(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
