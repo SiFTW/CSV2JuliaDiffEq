@@ -7,6 +7,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
     ODEDict=dict()
     print('Opening {file} as rate law file'.format(file=ratelawfile))
     ratelaws=dict()
+    delayDict=dict()
     #let's populate a string array of rate laws
     with open(ratelawfile,'r') as f:
         csvreader=csv.reader(f)
@@ -43,7 +44,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
 
             #split up substrates, products, modifiers and parameters by space
             substratesInThisRxn=substrates.split(' ')
-            substratesInThisRxn=list(filter(None,substratesInThisRxn))
+            substratesInThisRxn=list(filter(None,substratesInThisRxn))       
             productsInThisRxn=products.split(' ')
             productsInThisRxn=list(filter(None,productsInThisRxn))
             modifiersInThisRxn=modifiers.split(' ')
@@ -51,7 +52,8 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             parametersInThisRxn=parameters.split(' ')
             parametersInThisRxn=list(filter(None,parametersInThisRxn))
             #print(substratesInThisRxn)
-
+            
+            
             #print(ratelaws.keys())
             #lookup kinetic law
         
@@ -94,7 +96,17 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             for part in splitLaw:
                 if(part and re.search('[mM][Oo][Dd]\d{0,10}',part)):
                     modifierIndex=int(part[3:])-1
-                    newLaw+=modifiersInThisRxn[modifierIndex]
+                    thisModifier=modifiersInThisRxn[modifierIndex]
+                    if(thisModifier.startswith('delay(')):
+                        #cut the word delay and brackets out
+                        thisModifier=thisModifier[6:len(thisModifier)-1]
+                        thisModDelayProperties=thisModifier.split(',')
+                        thisMod=thisModDelayProperties[0]
+                        thisModDelay=thisModDelayProperties[1]
+                        newLaw+='h(t-tau_'+thisMod+')[histindex_'+thisMod+']'
+                        delayDict[thisMod]=thisModDelay
+                    else:
+                        newLaw+=modifiersInThisRxn[modifierIndex]
                 else:
                     newLaw+=list(part)
 
@@ -136,14 +148,22 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                     ODEDict[thisProduct]='du['+str(len(ODEDict))+']= + '+thisLaw
 
     #print(ODEDict)
-    writeODEFile(ODEDict,outputFile)
+    writeODEFile(ODEDict,outputFile,delayDict)
 
-def writeODEFile(ODEDict,outputFile):
+def writeODEFile(ODEDict,outputFile,delayDict):
     #this function will write the ODE file ready to be called by Julia
     with open(outputFile,'w') as f:
-        f.write('function odeFile(t,y,du)\n')
+        odeIndexDict=dict()
+        if len(delayDict)>0:
+            f.write('function ddeFile(t,y,h,du)\n')
+        else:
+            f.write('function odeFile(t,y,du)\n')
         for index,line in enumerate(ODEDict.keys()):
             f.write('\t'+line+'=y['+str(index)+']\n')
+            odeIndexDict[line]=index
+        for delayEntry in delayDict.keys():
+            f.write('\ttau_'+delayEntry+'='+delayDict[delayEntry]+'\n')
+            f.write('\thistindex_'+delayEntry+'='+str(odeIndexDict[delayEntry])+'\n')
         for index, line in enumerate(ODEDict.values()):
             f.write('\t#'+ODEDict.keys()[index]+'\n')            
             f.write('\t'+line+'\n')
