@@ -13,7 +13,7 @@ This CSV file should contain a header line followed by 4 fields, seperated by co
 * Products separated by spaces,
 * Products separated by spaces,
 * The full title of the rate law,
-* Modifiers separated by spaces,
+* Modifiers separated by spaces. Modifiers can be delayed and the output will take the format of a DDE. Use the syntax delay(modifier,delayTime) to specify a delayed modifier.
 * Parameters separated by spaces, parameter names must include the type of parameter then an underscore and the parameter name. This allows vmax, km etc to be placed in the correct position in the reaction
 
 `[A]+[B] -> [AB]`
