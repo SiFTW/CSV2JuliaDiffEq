@@ -151,11 +151,25 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                     ODEIndexDict[len(ODEDict)]=thisProduct
 
     #print(ODEDict)
-    writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict)
+    writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,len(parametersDict))
 
-def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict):
+def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,numberOfParameters):
     #this function will write the ODE file ready to be called by Julia
+
     with open(outputFile,'w') as f:
+        f.write('#######################################################\n')
+        f.write('# Generated programmatically by CSV2JuliaDiffEq.      #\n')
+        f.write('# http://github.com/SiFTW/CSV2JuliaDiffEq             #\n')
+        f.write('#######################################################\n')
+        f.write('# generated from:\n')
+        f.write('#    reactions file: {file}\n'.format(file=reactionfile))
+        f.write('#    parameters file file: {file}\n'.format(file=parameterfile))
+        f.write('#    rate law file: {file}\n'.format(file=ratelawfile))
+        f.write('#\n')
+        f.write('# Statistics:\n')
+        f.write('#    Equations:{number}\n'.format(number=len(ODEIndexDict)))
+        f.write('#    Parameters:{number}\n'.format(number=numberOfParameters))
+        f.write('#######################################################\n\n')        
         odeNameDict=dict()
         if len(delayDict)>0:
             f.write('function ddeFile!(dy,y,h,p,t)\n')
@@ -171,6 +185,11 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict):
             f.write('\t#'+key+'\n')            
             f.write('\t'+ODEDict[key]+'\n')
         f.write('end')
+    with open('variableNames.jl','w') as f:
+        f.write('syms=[')
+        for line in ODEIndexDict.keys():
+            f.write('\"'+ODEIndexDict[line]+'\",')
+        f.write(']')
     
 
 csv2model(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
