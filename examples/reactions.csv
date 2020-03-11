@@ -1,5 +1,0 @@
-Substrate,Products,Kinetic Law,Modifiers,Parameters
-A B,AB,Mass Action Binding,,ABBinding
-AB,,Mass Action Deg,,ABDeg
-,A,Constant,,Aexp
-,B,Constant,,Bexp
