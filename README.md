@@ -9,6 +9,8 @@ Generate the model with:
 Then run the model with DifferentialEquations.jl. A simple solving script for the example model is provided and can be run with:
 `julia solveSystems.jl`
 
+The examples are pretty self explanatory and I'll write some better documentation of the input requirements soon but here is roughly what the code expects:
+
 ## Input file formats
 
 Three CSV Files are required as input their format is as follows:
