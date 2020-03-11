@@ -8,6 +8,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
     print('Opening {file} as rate law file'.format(file=ratelawfile))
     ratelaws=dict()
     delayDict=dict()
+    ODEIndexDict=dict()
     #let's populate a string array of rate laws
     with open(ratelawfile,'r') as f:
         csvreader=csv.reader(f)
@@ -62,14 +63,14 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             #now we need to go through products substrates modifiers and variable using regular expressions
             # we will substitute in the correct values from each table
             #substrates
-            splitLaw=re.split('\[([sS]\d{0,10})\]',thisLaw)
+
+            splitLaw=re.split('(\[[sS]\d{0,10}\])',thisLaw)
             newLaw=[]
             substrateIndex=0
-            #print(splitLaw)
+            
             for part in splitLaw:   
-                #print(part)
-                if(part and re.search('([sS]\d{0,10})',part)):
-                    substrateIndex=int(part[1:])-1
+                if(part and part.startswith('[') and re.search('([sS]\d{0,10})',part)):
+                    substrateIndex=int(part[2:len(part)-1])-1
                     newLaw+=substratesInThisRxn[substrateIndex]
                 else:
                     newLaw+=list(part)
@@ -78,11 +79,12 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             #print(newLaw)
 
             #products
-            splitLaw=re.split('\[([pP]\d{0,10})\]',thisLaw)
+            splitLaw=re.split('(\[[pP]\d{0,10}\])',thisLaw)
             newLaw=[]
+
             for part in splitLaw:
-                if(part and re.search('[pP]\d{0,10}',part)):
-                    productIndex=int(part[1:])-1
+                if(part and part.startswith('[') and re.search('([pP]\d{0,10})',part)):
+                    productIndex=int(part[2:len(part)-1])-1
                     newLaw+=productsInThisRxn[productIndex]
                 else:
                     newLaw+=list(part)
@@ -90,12 +92,12 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             thisLaw="".join(newLaw)
             
             #modifiers
-            splitLaw=re.split('\[([mM][Oo][Dd]\d{0,10})\]',thisLaw)
+            splitLaw=re.split('(\[[mM][Oo][Dd]\d{0,10}\])',thisLaw)
             newLaw=[]
             modifierIndex=0
             for part in splitLaw:
-                if(part and re.search('[mM][Oo][Dd]\d{0,10}',part)):
-                    modifierIndex=int(part[3:])-1
+                if(part and part.startswith('[') and re.search('[mM][Oo][Dd]\d{0,10}',part)):
+                    modifierIndex=int(part[4:len(part)-1])-1
                     thisModifier=modifiersInThisRxn[modifierIndex]
                     if(thisModifier.startswith('delay(')):
                         #cut the word delay and brackets out
@@ -131,42 +133,43 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                                                    
                     
 
-                            thisLaw="".join(newLaw)
+                    thisLaw="".join(newLaw)
 
             #we need to add this reaction to every product and substrate involved in this reaction
-            for i in range(len(substratesInThisRxn)):
-                thisSubstrate=substratesInThisRxn[i]
-                if thisSubstrate in ODEDict.keys():
+
+            for thisSubstrate in substratesInThisRxn:
+                if thisSubstrate in ODEDict:
                     ODEDict[thisSubstrate]=ODEDict[thisSubstrate]+' - '+thisLaw
                 else:
-                    ODEDict[thisSubstrate]='du['+str(len(ODEDict))+']= -'+thisLaw
-            for i in range(len(productsInThisRxn)):
-                thisProduct=productsInThisRxn[i]
-                if thisProduct in ODEDict.keys():
+                    ODEDict[thisSubstrate]='dy['+str(len(ODEDict)+1)+']= -'+thisLaw
+                    ODEIndexDict[len(ODEDict)]=thisSubstrate
+            for thisProduct in productsInThisRxn:
+                if thisProduct in ODEDict:
                     ODEDict[thisProduct]=ODEDict[thisProduct]+' + '+thisLaw
                 else:
-                    ODEDict[thisProduct]='du['+str(len(ODEDict))+']= + '+thisLaw
+                    ODEDict[thisProduct]='dy['+str(len(ODEDict)+1)+']= + '+thisLaw
+                    ODEIndexDict[len(ODEDict)]=thisProduct
 
     #print(ODEDict)
-    writeODEFile(ODEDict,outputFile,delayDict)
+    writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict)
 
-def writeODEFile(ODEDict,outputFile,delayDict):
+def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict):
     #this function will write the ODE file ready to be called by Julia
     with open(outputFile,'w') as f:
-        odeIndexDict=dict()
+        odeNameDict=dict()
         if len(delayDict)>0:
-            f.write('function ddeFile(t,y,h,du)\n')
+            f.write('function ddeFile!(dy,y,h,p,t)\n')
         else:
-            f.write('function odeFile(t,y,du)\n')
-        for index,line in enumerate(ODEDict.keys()):
-            f.write('\t'+line+'=y['+str(index)+']\n')
-            odeIndexDict[line]=index
+            f.write('function odeFile!(dy,y,p,t)\n')
+        for line in ODEIndexDict.keys():
+            f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
+            odeNameDict[ODEIndexDict[line]]=line
         for delayEntry in delayDict.keys():
             f.write('\ttau_'+delayEntry+'='+delayDict[delayEntry]+'\n')
-            f.write('\thistindex_'+delayEntry+'='+str(odeIndexDict[delayEntry])+'\n')
-        for index, line in enumerate(ODEDict.values()):
-            f.write('\t#'+ODEDict.keys()[index]+'\n')            
-            f.write('\t'+line+'\n')
+            f.write('\thistindex_'+delayEntry+'='+str(odeNameDict[delayEntry])+'\n')
+        for key in ODEDict.keys():
+            f.write('\t#'+key+'\n')            
+            f.write('\t'+ODEDict[key]+'\n')
         f.write('end')
     
 
