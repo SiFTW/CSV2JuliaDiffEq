@@ -3,7 +3,11 @@ Convert reactions and parameters defined in CSV files to DifferentialEquations.j
 
 ## Example usage
 
-python csv2model.py examples/reactions2.csv examples/parameters2.csv examples/rateLaws2.csv odeFile.jl
+Generate the model with:
+`python csv2model.py reactions.csv parameters.csv rateLaws.csv odeFileExample.jl`
+
+Then run the model with DifferentialEquations.jl. A simple solving script for the example model is provided and can be run with:
+`julia solveSystems.jl`
 
 ## Input file formats
 
