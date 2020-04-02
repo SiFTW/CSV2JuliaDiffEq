@@ -26,7 +26,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
         #skpip header row
         next(csvreader)
         for line in csvreader:
-            parametersDict[line[0]]=float(line[1])
+            parametersDict[line[0]]=str(line[1])
 
 
     #let's iterate through the reaction file
@@ -105,8 +105,9 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                         thisModDelayProperties=thisModifier.split(',')
                         thisMod=thisModDelayProperties[0]
                         thisModDelay=thisModDelayProperties[1]
-                        newLaw+='(h(p,t-tau_'+thisMod+')[histindex_'+thisMod+'])' 
-                        delayDict[thisMod]=thisModDelay
+                        thisDelayIndex=str(len(delayDict))
+                        newLaw+='(h(p,t-tau_'+thisMod+'_'+thisDelayIndex+')[histindex_'+thisMod+'])' 
+                        delayDict[thisMod+'_'+thisDelayIndex]=thisModDelay
                     else:
                         newLaw+=modifiersInThisRxn[modifierIndex]
                 else:
@@ -170,17 +171,23 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,paramete
         f.write('#    Equations:{number}\n'.format(number=len(ODEIndexDict)))
         f.write('#    Parameters:{number}\n'.format(number=numberOfParameters))
         f.write('#######################################################\n\n')        
+        f.write('\n\n')
         odeNameDict=dict()
         if len(delayDict)>0:
             f.write('function ddeFile!(dy,y,h,p,t)\n')
         else:
             f.write('function odeFile!(dy,y,p,t)\n')
+        #let's deal with time-dependent params
         for line in ODEIndexDict.keys():
             f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
             odeNameDict[ODEIndexDict[line]]=line
+        delayOdeNameList=[]
         for delayEntry in delayDict.keys():
             f.write('\ttau_'+delayEntry+'='+delayDict[delayEntry]+'\n')
-            f.write('\thistindex_'+delayEntry+'='+str(odeNameDict[delayEntry])+'\n')
+            odeName=delayEntry.split('_')[0]
+      	    delayOdeNameList.append(odeName)
+	for name in delayOdeNameList:
+	    f.write('\thistindex_'+name+'='+str(odeNameDict[name])+'\n')
         for key in ODEDict.keys():
             f.write('\t#'+key+'\n')            
             f.write('\t'+ODEDict[key]+'\n')
