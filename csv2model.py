@@ -185,9 +185,9 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,paramete
         for delayEntry in delayDict.keys():
             f.write('\ttau_'+delayEntry+'='+delayDict[delayEntry]+'\n')
             odeName=delayEntry.split('_')[0]
-      	    delayOdeNameList.append(odeName)
-	for name in delayOdeNameList:
-	    f.write('\thistindex_'+name+'='+str(odeNameDict[name])+'\n')
+            delayOdeNameList.append(odeName)
+        for name in delayOdeNameList:
+            f.write('\thistindex_'+name+'='+str(odeNameDict[name])+'\n')
         for key in ODEDict.keys():
             f.write('\t#'+key+'\n')            
             f.write('\t'+ODEDict[key]+'\n')
