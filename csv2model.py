@@ -67,52 +67,57 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             splitLaw=re.split('(\[[sS]\d{0,10}\])',thisLaw)
             newLaw=[]
             substrateIndex=0
-            
-            for part in splitLaw:   
-                if(part and part.startswith('[') and re.search('([sS]\d{0,10})',part)):
-                    substrateIndex=int(part[2:len(part)-1])-1
-                    newLaw+=substratesInThisRxn[substrateIndex]
-                else:
-                    newLaw+=list(part)
+            try:
+                for part in splitLaw:   
+                    if(part and part.startswith('[') and re.search('([sS]\d{0,10})',part)):
+                        substrateIndex=int(part[2:len(part)-1])-1
+                        newLaw+=substratesInThisRxn[substrateIndex]
+                    else:
+                        newLaw+=list(part)
 
-            thisLaw="".join(newLaw)
-            #print(newLaw)
+                thisLaw="".join(newLaw)
+                #print(newLaw)
+            except:
+                print('error addding substrates {substrateIndex} to reaction {line}'.format(substrateIndex=substrateIndex, line=line))
 
             #products
             splitLaw=re.split('(\[[pP]\d{0,10}\])',thisLaw)
             newLaw=[]
-
-            for part in splitLaw:
-                if(part and part.startswith('[') and re.search('([pP]\d{0,10})',part)):
-                    productIndex=int(part[2:len(part)-1])-1
-                    newLaw+=productsInThisRxn[productIndex]
-                else:
-                    newLaw+=list(part)
-
+            try:
+                for part in splitLaw:
+                    if(part and part.startswith('[') and re.search('([pP]\d{0,10})',part)):
+                        productIndex=int(part[2:len(part)-1])-1
+                        newLaw+=productsInThisRxn[productIndex]
+                    else:
+                        newLaw+=list(part)
+            except:
+                print('error addding products {productIndex} to reaction {line}'.format(productIndex=productIndex, line=line))
             thisLaw="".join(newLaw)
             
             #modifiers
             splitLaw=re.split('(\[[mM][Oo][Dd]\d{0,10}\])',thisLaw)
             newLaw=[]
             modifierIndex=0
-            for part in splitLaw:
-                if(part and part.startswith('[') and re.search('[mM][Oo][Dd]\d{0,10}',part)):
-                    modifierIndex=int(part[4:len(part)-1])-1
-                    thisModifier=modifiersInThisRxn[modifierIndex]
-                    if(thisModifier.startswith('delay(')):
-                        #cut the word delay and brackets out
-                        thisModifier=thisModifier[6:len(thisModifier)-1]
-                        thisModDelayProperties=thisModifier.split(',')
-                        thisMod=thisModDelayProperties[0]
-                        thisModDelay=thisModDelayProperties[1]
-                        thisDelayIndex=str(len(delayDict))
-                        newLaw+='(h(p,t-tau_'+thisMod+'_'+thisDelayIndex+')[histindex_'+thisMod+'])' 
-                        delayDict[thisMod+'_'+thisDelayIndex]=thisModDelay
+            try:
+                for part in splitLaw:
+                    if(part and part.startswith('[') and re.search('[mM][Oo][Dd]\d{0,10}',part)):
+                        modifierIndex=int(part[4:len(part)-1])-1
+                        thisModifier=modifiersInThisRxn[modifierIndex]
+                        if(thisModifier.startswith('delay(')):
+                            #cut the word delay and brackets out
+                            thisModifier=thisModifier[6:len(thisModifier)-1]
+                            thisModDelayProperties=thisModifier.split(',')
+                            thisMod=thisModDelayProperties[0]
+                            thisModDelay=thisModDelayProperties[1]
+                            thisDelayIndex=str(len(delayDict))
+                            newLaw+='(h(p,t-tau_'+thisMod+'_'+thisDelayIndex+')[histindex_'+thisMod+'])' 
+                            delayDict[thisMod+'_'+thisDelayIndex]=thisModDelay
+                        else:
+                            newLaw+=modifiersInThisRxn[modifierIndex]
                     else:
-                        newLaw+=modifiersInThisRxn[modifierIndex]
-                else:
-                    newLaw+=list(part)
-
+                        newLaw+=list(part)
+            except:
+                print('error addding modifiers {modifierIndex} to reaction {line}'.format(modifierIndex=modifierIndex, line=line))
             thisLaw="".join(newLaw)           
 
 
@@ -120,21 +125,23 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             splitLaw=re.split('\{(\w{1,20})\}',thisLaw)
             listLength=len(splitLaw)
             newLaw=[]
-            for i in range(listLength):
-                if splitLaw[i]:
-                    parameterAdded=0
-                    for j in range(len(parametersInThisRxn)):
-                        thisParameterType=str.split(parametersInThisRxn[j],'_')[0]
-                        if splitLaw[i].startswith(thisParameterType):
-                            newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
-                            parameterAdded=1
-                    else:
-                        if not parameterAdded:
-                            newLaw+=splitLaw[i]
+            try:
+                for i in range(listLength):
+                    if splitLaw[i]:
+                        parameterAdded=0
+                        for j in range(len(parametersInThisRxn)):
+                            thisParameterType=str.split(parametersInThisRxn[j],'_')[0]
+                            if splitLaw[i].startswith(thisParameterType):
+                                newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
+                                parameterAdded=1
+                        else:
+                            if not parameterAdded:
+                                newLaw+=splitLaw[i]
                                                    
                     
-
-                    thisLaw="".join(newLaw)
+            except:
+                print('error addding parameters {parametersInThisRxn} to reaction {line}'.format(parametersInThisRxn=parametersInThisRxn, line=line))
+            thisLaw="".join(newLaw)
 
             #we need to add this reaction to every product and substrate involved in this reaction
 
