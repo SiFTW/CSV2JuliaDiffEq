@@ -161,6 +161,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             #sometimes a modifier needs an ODE but has no changes other than events
             for thisModifier in modifiersInThisRxn:
                 if thisModifier not in ODEDict and not thisModifier.startswith("delay("):
+                #if thisModifier not in ODEDict:
                     ODEDict[thisModifier]='dy['+str(len(ODEDict)+1)+']=0'
                     ODEIndexDict[len(ODEDict)]=thisModifier
     #print(ODEDict)
