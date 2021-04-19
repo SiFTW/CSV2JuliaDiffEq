@@ -125,12 +125,15 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
             splitLaw=re.split('\{(\w{1,20})\}',thisLaw)
             listLength=len(splitLaw)
             newLaw=[]
+            currentParamInfo=0
             try:
                 for i in range(listLength):
                     if splitLaw[i]:
                         parameterAdded=0
                         for j in range(len(parametersInThisRxn)):
+                            currentParamInfo=parametersInThisRxn[j]
                             thisParameterType=str.split(parametersInThisRxn[j],'_')[0]
+
                             #if splitLaw[i].startswith(thisParameterType):
                             if splitLaw[i]==thisParameterType:
                                 newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
@@ -141,8 +144,10 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
 
 
             except:
-                print('error addding parameters {parametersInThisRxn} to reaction {line}'.format(parametersInThisRxn=parametersInThisRxn, line=line))
+                print('error addding parameters {parametersInThisRxn} to reaction {line}\n'.format(parametersInThisRxn=parametersInThisRxn, line=line))
+                print('error addding parameter: {currentParamInfo}\n'.format(currentParamInfo=currentParamInfo) )
             thisLaw="".join(newLaw)
+
 
             #we need to add this reaction to every product and substrate involved in this reaction
 
@@ -187,9 +192,9 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,paramete
         f.write('\n\n')
         odeNameDict=dict()
         if len(delayDict)>0:
-            f.write('function ddeFile!(dy,y,h,p,t)\n')
+            f.write('function ddeFile(dy,y,h,p,t)\n')
         else:
-            f.write('function odeFile!(dy,y,p,t)\n')
+            f.write('function odeFile(dy,y,p,t)\n')
         #let's deal with time-dependent params
         for line in ODEIndexDict.keys():
             f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
