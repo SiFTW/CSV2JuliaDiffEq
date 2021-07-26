@@ -16,7 +16,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
         next(csvreader)
         for line in csvreader:
             #print('adding key:{key}, val:{val} to ratelaws dict'.format(key=line[0],val=line[0]))
-            ratelaws[line[0]]=line[1]
+            ratelaws[strip(line[0])]=strip(line[1])
 
     #let's populate the parameter list
     print('Opening {file} as parameters file'.format(file=parameterfile))
@@ -26,7 +26,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
         #skpip header row
         next(csvreader)
         for line in csvreader:
-            parametersDict[line[0]]=str(line[1])
+            parametersDict[strip(line[0])]=str(strip(line[1])
 
 
     #let's iterate through the reaction file
@@ -37,11 +37,11 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
         next(csvreader)
         for line in csvreader:
             #substrate, products, kinetic law, modifiers, parameters
-            substrates=line[0]
-            products=line[1]
-            kineticlaw=line[2]
-            modifiers=line[3]
-            parameters=line[4]
+            substrates=strip(line[0])
+            products=strip(line[1])
+            kineticlaw=strip(line[2])
+            modifiers=strip(line[3])
+            parameters=strip(line[4])
 
             #split up substrates, products, modifiers and parameters by space
             substratesInThisRxn=substrates.split(' ')
@@ -132,9 +132,12 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                         parameterAdded=0
                         for j in range(len(parametersInThisRxn)):
                             currentParamInfo=parametersInThisRxn[j]
+                            print('current param info: {currentParamInfo}'.format(currentParamInfo= currentParamInfo))
                             thisParameterType=str.split(parametersInThisRxn[j],'_')[0]
-
+                            print('thisParameterType: {thisParameterType}'.format(thisParameterType = thisParameterType))
                             #if splitLaw[i].startswith(thisParameterType):
+                            print(splitLaw)
+                            print(parametersInThisRxn[j])
                             if splitLaw[i]==thisParameterType:
                                 newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
                                 parameterAdded=1
@@ -143,9 +146,10 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                                 newLaw+=splitLaw[i]
 
 
-            except:
+            except Exception as e:
                 print('error addding parameters {parametersInThisRxn} to reaction {line}\n'.format(parametersInThisRxn=parametersInThisRxn, line=line))
                 print('error addding parameter: {currentParamInfo}\n'.format(currentParamInfo=currentParamInfo) )
+                print('error:{e}\n'.format(e=e))
             thisLaw="".join(newLaw)
 
 
@@ -196,9 +200,12 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,paramete
         else:
             f.write('function odeFile(dy,y,p,t)\n')
         #let's deal with time-dependent params
-        for line in ODEIndexDict.keys():
-            f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
-            odeNameDict[ODEIndexDict[line]]=line
+        #for line in ODEIndexDict.keys():
+        #    f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
+        #    odeNameDict[ODEIndexDict[line]]=line
+        for i in range(length(ODEIndexDict.keys())):
+            f.write('\t'+ODEIndexDict[i]+'=y['+str(i)+']\n')
+            odeNameDict[ODEIndexDict[i]]=i
         delayOdeNameList=[]
         for delayEntry in delayDict.keys():
             f.write('\ttau_'+delayEntry+'='+delayDict[delayEntry]+'\n')
