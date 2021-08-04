@@ -16,7 +16,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
         next(csvreader)
         for line in csvreader:
             #print('adding key:{key}, val:{val} to ratelaws dict'.format(key=line[0],val=line[0]))
-            ratelaws[strip(line[0])]=strip(line[1])
+            ratelaws[line[0].strip()]=line[1].strip()
 
     #let's populate the parameter list
     print('Opening {file} as parameters file'.format(file=parameterfile))
@@ -26,7 +26,7 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
         #skpip header row
         next(csvreader)
         for line in csvreader:
-            parametersDict[strip(line[0])]=str(strip(line[1])
+            parametersDict[line[0].strip()]=str(line[1].strip())
 
 
     #let's iterate through the reaction file
@@ -37,11 +37,11 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
         next(csvreader)
         for line in csvreader:
             #substrate, products, kinetic law, modifiers, parameters
-            substrates=strip(line[0])
-            products=strip(line[1])
-            kineticlaw=strip(line[2])
-            modifiers=strip(line[3])
-            parameters=strip(line[4])
+            substrates=line[0].strip()
+            products=line[1].strip()
+            kineticlaw=line[2].strip()
+            modifiers=line[3].strip()
+            parameters=line[4].strip()
 
             #split up substrates, products, modifiers and parameters by space
             substratesInThisRxn=substrates.split(' ')
@@ -132,12 +132,12 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                         parameterAdded=0
                         for j in range(len(parametersInThisRxn)):
                             currentParamInfo=parametersInThisRxn[j]
-                            print('current param info: {currentParamInfo}'.format(currentParamInfo= currentParamInfo))
+                            #print('current param info: {currentParamInfo}'.format(currentParamInfo= currentParamInfo))
                             thisParameterType=str.split(parametersInThisRxn[j],'_')[0]
-                            print('thisParameterType: {thisParameterType}'.format(thisParameterType = thisParameterType))
+                            #print('thisParameterType: {thisParameterType}'.format(thisParameterType = thisParameterType))
                             #if splitLaw[i].startswith(thisParameterType):
-                            print(splitLaw)
-                            print(parametersInThisRxn[j])
+                            #print(splitLaw)
+                            #print(parametersInThisRxn[j])
                             if splitLaw[i]==thisParameterType:
                                 newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
                                 parameterAdded=1
@@ -203,9 +203,9 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,paramete
         #for line in ODEIndexDict.keys():
         #    f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
         #    odeNameDict[ODEIndexDict[line]]=line
-        for i in range(length(ODEIndexDict.keys())):
-            f.write('\t'+ODEIndexDict[i]+'=y['+str(i)+']\n')
-            odeNameDict[ODEIndexDict[i]]=i
+        for i in range(0,len(ODEIndexDict.keys())):
+            f.write('\t'+ODEIndexDict[i+1]+'=y['+str(i+1)+']\n')
+            odeNameDict[ODEIndexDict[i+1]]=i
         delayOdeNameList=[]
         for delayEntry in delayDict.keys():
             f.write('\ttau_'+delayEntry+'='+delayDict[delayEntry]+'\n')
