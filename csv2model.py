@@ -110,10 +110,10 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                             thisMod=thisModDelayProperties[0]
                             thisModDelay=thisModDelayProperties[1]
                             thisDelayIndex=str(len(delayDict))
-                            newLaw+='(h(p,t-tau_'+thisMod+'_'+thisDelayIndex+')[histindex_'+thisMod+'])'
+                            newLaw+='abs((h(p,t-tau_'+thisMod+'_'+thisDelayIndex+')[histindex_'+thisMod+']))'
                             delayDict[thisMod+'_'+thisDelayIndex]=thisModDelay
                         else:
-                            newLaw+=modifiersInThisRxn[modifierIndex]
+                            newLaw+="abs("+modifiersInThisRxn[modifierIndex]+")"
                     else:
                         newLaw+=list(part)
             except:
