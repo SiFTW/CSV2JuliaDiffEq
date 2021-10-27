@@ -210,7 +210,7 @@ def writeParamFile(scanIncludesFileName,parametersDict):
         f.write('#      - \"modify\" which can be used to only modify    #\n')
         f.write('#        certain parameters. Default is all ones.     #\n')
         f.write('# to modify param k1 by 1.5x simply do:               #\n')
-        f.write('#      modify(\"paramName\")=1.5                        #\n')
+        f.write('#      modify[\"k1\"]=1.5                        #\n')
         f.write('#######################################################\n')
         f.write('\n\n')
         f.write('modify=Dict(')
