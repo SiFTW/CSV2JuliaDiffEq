@@ -6,10 +6,24 @@ Convert reactions and parameters defined in CSV files to DifferentialEquations.j
 Generate the model with:
 `python csv2model.py reactions.csv parameters.csv rateLaws.csv odeFileExample.jl`
 
-Then run the model with DifferentialEquations.jl. A simple solving script for the example model is provided and can be run with:
+The model file created can then be included within Julia:
+`include("odeFileExample.jl")
+include("variableNames.jl")`
+
+Then run/solve the model with DifferentialEquations.jl. A simple solving script for the example model is provided and can be run with:
 `julia solveSystems.jl`
 
-The examples are pretty self explanatory and I'll write some better documentation of the input requirements soon but here is roughly what the code expects:
+If you do not want your parameters to be hardcoded into the model and instead want to define a parameter function, enabling you to modify your parameters later when you solve the model then you should add the argument `scan` to the end as follows:
+
+`python3 csv2model.py reactions.csv parameters.csv rateLaws.csv odeFileExample.jl scan`
+
+You will then need to include the following addition file:
+`include("scanIncludes.jl")`
+
+This will allow you to modify parameters using:
+`modify["k_ABBinding"]=1.5`
+
+CSV2Model.py expects the following files to be present:
 
 ## Input file formats
 
@@ -22,7 +36,7 @@ This CSV file should contain a header line followed by 4 fields, seperated by co
 * Products separated by spaces,
 * The full title of the rate law,
 * Modifiers separated by spaces. Modifiers can be delayed and the output will take the format of a DDE. Use the syntax delay(modifier,delayTime) to specify a delayed modifier.
-* Parameters separated by spaces, parameter names must include the type of parameter then an underscore and the parameter name. All parameters should be numbered consistently. This allows vmax, km etc to be placed in the correct position in the reaction
+* Parameters separated by spaces, parameter names must include the type of parameter then an underscore and the parameter name. All parameters should be numbered consistently. This allows vmax, km etc to be placed in the correct position in the reaction. Please see example files for an example.
 
 `[A]+[B] -> [AB]`
 
@@ -50,5 +64,10 @@ Parameter|Value
 -|-
 k1_ABBinding|0.2
 
+An optional distirbute column can be included that will be ignored by CSV to Julia, but can be used later to indicate which parameters you wish to distribute.
+
+Parameter|Value|Distribute
+-|-|-
+k1_ABBinding|0.2|1
 
 

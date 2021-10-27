@@ -3,9 +3,20 @@ import sys
 import csv
 import re
 
-def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
+def csv2model(reactionfile,parameterfile,ratelawfile,outputFile,paramType="inline"):
+    scanIncludesFileName="scanIncludes.jl"
     ODEDict=dict()
+    print(paramType)
+    if paramType == "inline":
+    	print('Running CSV2JuliaDiffEq with parameters hard-coded into the CSV file, \
+if this is not correct, re-run with the 5th argument set to \'scan\'')
+    else:
+	    print('Running CSV2JuliaDiffEq with parameters left as a function call to paramFun(n), \
+for all params. We will also create a paramFun.jl file that should be included and defines all parameters. \
+If this is incorrect, please re-run with 5th argument set to \'inline\'')
+
     print('Opening {file} as rate law file'.format(file=ratelawfile))
+
     ratelaws=dict()
     delayDict=dict()
     ODEIndexDict=dict()
@@ -21,12 +32,14 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
     #let's populate the parameter list
     print('Opening {file} as parameters file'.format(file=parameterfile))
     parametersDict=dict()
+    currentIndex=1
     with open(parameterfile,'r') as f:
         csvreader=csv.reader(f)
         #skpip header row
         next(csvreader)
         for line in csvreader:
             parametersDict[line[0].strip()]=str(line[1].strip())
+            currentIndex=currentIndex+1
 
 
     #let's iterate through the reaction file
@@ -117,7 +130,8 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                     else:
                         newLaw+=list(part)
             except:
-                print('error addding modifiers {modifierIndex} to reaction {line}'.format(modifierIndex=modifierIndex, line=line))
+                print('error addding modifiers {modifierIndex} \
+                	to reaction {line}'.format(modifierIndex=modifierIndex, line=line))
             thisLaw="".join(newLaw)
 
 
@@ -139,16 +153,22 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                             #print(splitLaw)
                             #print(parametersInThisRxn[j])
                             if splitLaw[i]==thisParameterType:
-                                newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
-                                parameterAdded=1
+                                if paramType=="scan":
+                                    newLaw+=list("paramFun(\""+str(parametersInThisRxn[j])+"\",modify)")
+                                    parameterAdded=1
+                                else:
+                                    newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
+                                    parameterAdded=1
                         else:
                             if not parameterAdded:
                                 newLaw+=splitLaw[i]
 
 
             except Exception as e:
-                print('error addding parameters {parametersInThisRxn} to reaction {line}\n'.format(parametersInThisRxn=parametersInThisRxn, line=line))
-                print('error addding parameter: {currentParamInfo}\n'.format(currentParamInfo=currentParamInfo) )
+                print('error addding parameters \
+                	{parametersInThisRxn} to reaction {line}\n'.format(parametersInThisRxn=parametersInThisRxn, line=line))
+                print('error addding parameter: \
+                	{currentParamInfo}\n'.format(currentParamInfo=currentParamInfo) )
                 print('error:{e}\n'.format(e=e))
             thisLaw="".join(newLaw)
 
@@ -175,6 +195,40 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile):
                     ODEIndexDict[len(ODEDict)]=thisModifier
     #print(ODEDict)
     writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,len(parametersDict))
+    if paramType=="scan":
+        writeParamFile(scanIncludesFileName,parametersDict)
+
+
+def writeParamFile(scanIncludesFileName,parametersDict):
+    with open(scanIncludesFileName,'w') as f:
+        f.write('#######################################################\n')
+        f.write('# Generated programmatically by CSV2JuliaDiffEq.      #\n')
+        f.write('# http://github.com/SiFTW/CSV2JuliaDiffEq             #\n')
+        f.write('# include this file with in model running script      #\n')
+        f.write('# defines a function and a dictionary:                #\n')
+        f.write('#      - \"paramFun\" which returns parameter value     #\n')
+        f.write('#      - \"modify\" which can be used to only modify    #\n')
+        f.write('#        certain parameters. Default is all ones.     #\n')
+        f.write('# to modify param k1 by 1.5x simply do:               #\n')
+        f.write('#      modify(\"paramName\")=1.5                        #\n')
+        f.write('#######################################################\n')
+        f.write('\n\n')
+        f.write('modify=Dict(')
+        for (key,val) in parametersDict.items():
+        	f.write('\"'+str(key)+"\"=>"+str(1.0)+", ")
+        f.write(')')
+        f.write('\n\n')
+        f.write('parameterList=Dict(')
+        for key,val in parametersDict.items():
+        	f.write('\"'+str(key)+"\"=>"+str(val)+", ")
+        f.write(')')
+        f.write('\n\n')
+        f.write('function paramFun(paramName,modify)\n')
+        f.write('   return parameterList[paramName]*modify[paramName]\n')
+        f.write('end\n')
+        f.write('println(\"parameters can now be modified by name.\")\n')
+        f.write('println(\"example to modify k_binding 1.5 fold higher:\")\n')
+        f.write('println(\"modify[\\\"k_binding\\\"]=1.5\")\n')
 
 def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,numberOfParameters):
     #this function will write the ODE file ready to be called by Julia
@@ -223,5 +277,7 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,paramete
             f.write('\"'+ODEIndexDict[line]+'\",')
         f.write(']')
 
-
-csv2model(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
+if len(sys.argv)==5:
+    csv2model(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
+elif len(sys.argv)==6:
+    csv2model(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5])

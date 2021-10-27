@@ -3,8 +3,8 @@ using Plots
 using CSV
 include("odeFileExample.jl")
 include("variableNames.jl")
-f=DDEFunction(ddeFile!,syms=syms)
-#f=ODEFunction(odeFile!,syms=syms)
+f=DDEFunction(ddeFile,Symbol.(syms))
+#f=ODEFunction(odeFile,Symbol.(syms))
 y0=ones(length(syms))
 p=1
 h(p,t)=ones(length(syms))
