@@ -154,7 +154,10 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
                             #print(parametersInThisRxn[j])
                             if splitLaw[i]==thisParameterType:
                                 if paramType=="scan":
-                                    newLaw+=list("paramFun(\""+str(parametersInThisRxn[j])+"\",modify)")
+                                    if "(t)" not in parametersDict[parametersInThisRxn[j]]:
+	                                    newLaw+=list("paramFun(\""+str(parametersInThisRxn[j])+"\",modify)")
+                                    else:
+                                        newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
                                     parameterAdded=1
                                 else:
                                     newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
@@ -215,12 +218,14 @@ def writeParamFile(scanIncludesFileName,parametersDict):
         f.write('\n\n')
         f.write('modify=Dict(')
         for (key,val) in parametersDict.items():
-        	f.write('\"'+str(key)+"\"=>"+str(1.0)+", ")
+            if "(t)" not in val:
+                f.write('\"'+str(key)+"\"=>"+str(1.0)+", ")
         f.write(')')
         f.write('\n\n')
         f.write('parameterList=Dict(')
         for key,val in parametersDict.items():
-        	f.write('\"'+str(key)+"\"=>"+str(val)+", ")
+            if "(t)" not in val:
+                f.write('\"'+str(key)+"\"=>"+str(val)+", ")
         f.write(')')
         f.write('\n\n')
         f.write('function paramFun(paramName,modify)\n')
