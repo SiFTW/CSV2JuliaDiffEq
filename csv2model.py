@@ -8,15 +8,13 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile,paramType="inlin
     ODEDict=dict()
     print(paramType)
     if paramType == "inline":
-    	print('Running CSV2JuliaDiffEq with parameters hard-coded into the CSV file, \
+        print('Running CSV2JuliaDiffEq with parameters hard-coded into the CSV file, \
 if this is not correct, re-run with the 5th argument set to \'scan\'')
     else:
-	    print('Running CSV2JuliaDiffEq with parameters left as a function call to paramFun(n), \
+        print('Running CSV2JuliaDiffEq with parameters left as a function call to paramFun(n), \
 for all params. We will also create a paramFun.jl file that should be included and defines all parameters. \
 If this is incorrect, please re-run with 5th argument set to \'inline\'')
-
     print('Opening {file} as rate law file'.format(file=ratelawfile))
-
     ratelaws=dict()
     delayDict=dict()
     ODEIndexDict=dict()
@@ -32,14 +30,12 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
     #let's populate the parameter list
     print('Opening {file} as parameters file'.format(file=parameterfile))
     parametersDict=dict()
-    currentIndex=1
     with open(parameterfile,'r') as f:
         csvreader=csv.reader(f)
         #skpip header row
         next(csvreader)
         for line in csvreader:
             parametersDict[line[0].strip()]=str(line[1].strip())
-            currentIndex=currentIndex+1
 
 
     #let's iterate through the reaction file
@@ -123,15 +119,14 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
                             thisMod=thisModDelayProperties[0]
                             thisModDelay=thisModDelayProperties[1]
                             thisDelayIndex=str(len(delayDict))
-                            newLaw+='abs((h(p,t-tau_'+thisMod+'_'+thisDelayIndex+')[histindex_'+thisMod+']))'
+                            newLaw+='(h(p,t-tau_'+thisMod+'_'+thisDelayIndex+')[histindex_'+thisMod+'])'
                             delayDict[thisMod+'_'+thisDelayIndex]=thisModDelay
                         else:
-                            newLaw+="abs("+modifiersInThisRxn[modifierIndex]+")"
+                            newLaw+=modifiersInThisRxn[modifierIndex]
                     else:
                         newLaw+=list(part)
             except:
-                print('error addding modifiers {modifierIndex} \
-                	to reaction {line}'.format(modifierIndex=modifierIndex, line=line))
+                print('error addding modifiers {modifierIndex} to reaction {line}'.format(modifierIndex=modifierIndex, line=line))
             thisLaw="".join(newLaw)
 
 
@@ -146,18 +141,15 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
                         parameterAdded=0
                         for j in range(len(parametersInThisRxn)):
                             currentParamInfo=parametersInThisRxn[j]
-                            #print('current param info: {currentParamInfo}'.format(currentParamInfo= currentParamInfo))
                             thisParameterType=str.split(parametersInThisRxn[j],'_')[0]
-                            #print('thisParameterType: {thisParameterType}'.format(thisParameterType = thisParameterType))
+
                             #if splitLaw[i].startswith(thisParameterType):
-                            #print(splitLaw)
-                            #print(parametersInThisRxn[j])
                             if splitLaw[i]==thisParameterType:
                                 if paramType=="scan":
                                     if "(t)" not in parametersDict[parametersInThisRxn[j]]:
-	                                    newLaw+=list("paramFun(\""+str(parametersInThisRxn[j])+"\",modify)")
+                                        newLaw+=list("paramFun(\""+str(parametersInThisRxn[j])+"\",modify)")
                                     else:
-                                        newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
+                                        newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))                                    
                                     parameterAdded=1
                                 else:
                                     newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
@@ -167,12 +159,9 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
                                 newLaw+=splitLaw[i]
 
 
-            except Exception as e:
-                print('error addding parameters \
-                	{parametersInThisRxn} to reaction {line}\n'.format(parametersInThisRxn=parametersInThisRxn, line=line))
-                print('error addding parameter: \
-                	{currentParamInfo}\n'.format(currentParamInfo=currentParamInfo) )
-                print('error:{e}\n'.format(e=e))
+            except:
+                print('error addding parameters {parametersInThisRxn} to reaction {line}\n'.format(parametersInThisRxn=parametersInThisRxn, line=line))
+                print('error addding parameter: {currentParamInfo}\n'.format(currentParamInfo=currentParamInfo) )
             thisLaw="".join(newLaw)
 
 
@@ -213,19 +202,19 @@ def writeParamFile(scanIncludesFileName,parametersDict):
         f.write('#      - \"modify\" which can be used to only modify    #\n')
         f.write('#        certain parameters. Default is all ones.     #\n')
         f.write('# to modify param k1 by 1.5x simply do:               #\n')
-        f.write('#      modify[\"k1\"]=1.5                        #\n')
+        f.write('#      modify(\"paramName\")=1.5                        #\n')
         f.write('#######################################################\n')
         f.write('\n\n')
         f.write('modify=Dict(')
         for (key,val) in parametersDict.items():
             if "(t)" not in val:
-                f.write('\"'+str(key)+"\"=>"+str(1.0)+", ")
+                f.write('\"'+str(key)+"\"=>"+str(1.0)+", ")        
         f.write(')')
         f.write('\n\n')
         f.write('parameterList=Dict(')
         for key,val in parametersDict.items():
             if "(t)" not in val:
-                f.write('\"'+str(key)+"\"=>"+str(val)+", ")
+                f.write('\"'+str(key)+"\"=>"+str(val)+", ")        
         f.write(')')
         f.write('\n\n')
         f.write('function paramFun(paramName,modify)\n')
@@ -234,6 +223,7 @@ def writeParamFile(scanIncludesFileName,parametersDict):
         f.write('println(\"parameters can now be modified by name.\")\n')
         f.write('println(\"example to modify k_binding 1.5 fold higher:\")\n')
         f.write('println(\"modify[\\\"k_binding\\\"]=1.5\")\n')
+
 
 def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,numberOfParameters):
     #this function will write the ODE file ready to be called by Julia
@@ -259,12 +249,9 @@ def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,paramete
         else:
             f.write('function odeFile(dy,y,p,t)\n')
         #let's deal with time-dependent params
-        #for line in ODEIndexDict.keys():
-        #    f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
-        #    odeNameDict[ODEIndexDict[line]]=line
-        for i in range(0,len(ODEIndexDict.keys())):
-            f.write('\t'+ODEIndexDict[i+1]+'=y['+str(i+1)+']\n')
-            odeNameDict[ODEIndexDict[i+1]]=i
+        for line in ODEIndexDict.keys():
+            f.write('\t'+ODEIndexDict[line]+'=y['+str(line)+']\n')
+            odeNameDict[ODEIndexDict[line]]=line
         delayOdeNameList=[]
         for delayEntry in delayDict.keys():
             f.write('\ttau_'+delayEntry+'='+delayDict[delayEntry]+'\n')
