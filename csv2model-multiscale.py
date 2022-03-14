@@ -9,12 +9,17 @@ def csv2model(reactionfile,parameterfile,ratelawfile,outputFile,paramType="inlin
     print(paramType)
     if paramType == "inline":
         print('Running CSV2JuliaDiffEq with parameters hard-coded into the CSV file, \
-if this is not correct, re-run with the 5th argument set to \'scan\'')
-    else:
+if this is not correct, re-run with the 5th argument set to \'scan\' or \'param\'')
+    elif paramType== "scan":
         print('Running CSV2JuliaDiffEq with parameters left as a function call to paramFun(n), \
 for all params. We will also create a paramFun.jl file that should be included and defines all parameters. \
-If this is incorrect, please re-run with 5th argument set to \'inline\'')
-    print('Opening {file} as rate law file'.format(file=ratelawfile))
+If this is incorrect, please re-run with 5th argument set to \'inline\' or \'param\'')
+    elif paramType== "param":
+        print('Running CSV2JuliaDiffEq with parameters dynamically determined by a variable, \
+re-run with the 5th argument set to \'scan\' or \'inline\'')
+    else:
+        print('The final argument was not recognised, please choose either \'scan\', \'inline\' or \'param\'')
+    print('Opening {file} as rate law file'.format(file=ratelawfile))    
     ratelaws=dict()
     delayDict=dict()
     ODEIndexDict=dict()
@@ -30,12 +35,21 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
     #let's populate the parameter list
     print('Opening {file} as parameters file'.format(file=parameterfile))
     parametersDict=dict()
+    parametersIndexDict=dict()
+    parametersIndexValueList=[]
+    parametersNameList=[]
+    lineIndex=1
     with open(parameterfile,'r') as f:
         csvreader=csv.reader(f)
         #skpip header row
         next(csvreader)
+
         for line in csvreader:
             parametersDict[line[0].strip()]=str(line[1].strip())
+            parametersIndexDict[line[0].strip()]=lineIndex
+            parametersIndexValueList.append(str(line[1].strip()))
+            parametersNameList.append(line[0].strip())
+            lineIndex=lineIndex+1
 
 
     #let's iterate through the reaction file
@@ -151,6 +165,13 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
                                     else:
                                         newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))                                    
                                     parameterAdded=1
+                                elif paramType=="param":
+                                    thisParamVal=str(parametersDict[parametersInThisRxn[j]])
+                                    if "(t)" in thisParamVal:
+                                        newLaw+=list("p["+str(parametersIndexDict[parametersInThisRxn[j]])+"](t)")
+                                    else:
+                                        newLaw+=list("p["+str(parametersIndexDict[parametersInThisRxn[j]])+"]")
+                                    parameterAdded=1
                                 else:
                                     newLaw+=list(str(parametersDict[parametersInThisRxn[j]]))
                                     parameterAdded=1
@@ -189,6 +210,34 @@ If this is incorrect, please re-run with 5th argument set to \'inline\'')
     writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,len(parametersDict))
     if paramType=="scan":
         writeParamFile(scanIncludesFileName,parametersDict)
+    elif paramType=="param":
+        writePfile(scanIncludesFileName,parametersNameList,parametersIndexValueList)
+           
+def writePfile(scanIncludesFileName,parametersNameList,parametersIndexValueList):
+    with open(scanIncludesFileName,'w') as f:
+        f.write('#######################################################\n')
+        f.write('# Generated programmatically by CSV2JuliaDiffEq.      #\n')
+        f.write('# http://github.com/SiFTW/CSV2JuliaDiffEq             #\n')
+        f.write('# include this file with in model running script      #\n')
+        f.write('# defines all parameter values in an array p[x]       #\n')
+        f.write('#      - this model style is compatable with          #\n')
+        f.write('#      sensitivities etc                              #\n')
+        f.write('#######################################################\n')
+        f.write('\n\n')
+        f.write('paramVals=[\n')
+        for index,val in enumerate(parametersIndexValueList):
+            f.write(str(parametersIndexValueList[index])+' #p['+str(index)+"] is "+parametersNameList[index]+"\n")        
+        f.write(']')
+        f.write('\n\n')
+        f.write('parameterNameList=[')
+        for index,val in enumerate(parametersIndexValueList):
+            f.write('\"'+str(parametersNameList[index])+'\" #parameterNameList['+str(index)+"]="+str(parametersIndexValueList[index])+"\n")        
+        f.write(']')
+        f.write('\n\n')
+        f.write('println(\"parameters can now be searched in parameterNameList by name.\")\n')
+        f.write('println(\"example to modify k_binding 1.5 fold higher:\")\n')
+        f.write('println(\"indexOfParam=findfirst(x->\\\"k_binding\\\"==x,parameterNameList)\")\n')
+        f.write('println(\"paramVals[indexOfParam]=paramVals[indexOfParam]*1.5\")\n')        
 
 
 def writeParamFile(scanIncludesFileName,parametersDict):
@@ -223,9 +272,10 @@ def writeParamFile(scanIncludesFileName,parametersDict):
         f.write('println(\"parameters can now be modified by name.\")\n')
         f.write('println(\"example to modify k_binding 1.5 fold higher:\")\n')
         f.write('println(\"modify[\\\"k_binding\\\"]=1.5\")\n')
+        
 
 
-def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,numberOfParameters):
+def writeODEFile(ODEDict,outputFile,delayDict,ODEIndexDict,reactionfile,parameterfile,ratelawfile,numberOfParameters,):
     #this function will write the ODE file ready to be called by Julia
 
     with open(outputFile,'w') as f:
