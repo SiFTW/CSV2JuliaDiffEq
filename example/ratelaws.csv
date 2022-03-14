@@ -1,0 +1,3 @@
+﻿Rate Law Name,Rate Law Definition
+Constant Exp,{k1}
+Mass Action with substrate,[S1] * {k1}

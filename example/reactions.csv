@@ -1,0 +1,5 @@
+﻿Substrate,Products,Kinetic Law,Modifiers,Parameters
+,A,Constant Exp,,k1_Aexp
+A,B,Mass Action with substrate,,k1_AtoB
+B,C,Mass Action with substrate,,k1_BtoC
+C,,Mass Action with substrate,,k1_Cdeg
