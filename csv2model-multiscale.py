@@ -226,7 +226,7 @@ def writePfile(scanIncludesFileName,parametersNameList,parametersIndexValueList)
         f.write('\n\n')
         f.write('paramVals=[\n')
         for index,val in enumerate(parametersIndexValueList):
-            f.write(str(parametersIndexValueList[index])+' #p['+str(index)+"] is "+parametersNameList[index]+"\n")        
+            f.write(str(parametersIndexValueList[index])+' #p['+str(index+1)+"] is "+parametersNameList[index]+"\n")        
         f.write(']')
         f.write('\n\n')
         f.write('parameterNameList=[')
